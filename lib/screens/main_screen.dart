@@ -15,9 +15,7 @@ class _MainScreenState extends State<MainScreen> {
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
 
   final List<Task> tasks = [
-    Task(id: '1', title: 'Buy groceries', createdAt: DateTime.now()),
-    Task(id: '2', title: 'Walk the dog', createdAt: DateTime.now()),
-    Task(id: '3', title: 'Finish Flutter project', createdAt: DateTime.now()),
+    Task(id: '1', title: 'Finish Flutter project', createdAt: DateTime.now()),
   ];
 
   void _addTask(String title) {
@@ -102,6 +100,29 @@ class _MainScreenState extends State<MainScreen> {
           borderRadius: BorderRadius.circular(12),
         ),
         child: ListTile(
+          onLongPress: () {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Delete Task'),
+                content:
+                    const Text('Are you sure you want to delete this task?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Cancel'),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      _deleteTask(task.id);
+                    },
+                    child: const Text('Delete'),
+                  ),
+                ],
+              ),
+            );
+          },
           leading: CupertinoCheckbox(
             value: false,
             onChanged: (_) {
@@ -146,22 +167,6 @@ class _MainScreenState extends State<MainScreen> {
       appBar: AppBar(
         title: const Text('To-Do App'),
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () async {
-              final newTaskTitle = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const AddTaskScreen(),
-                ),
-              );
-              if (newTaskTitle != null && newTaskTitle.isNotEmpty) {
-                _addTask(newTaskTitle);
-              }
-            },
-          ),
-        ],
       ),
       body: tasks.isEmpty
           ? Center(
@@ -194,7 +199,27 @@ class _MainScreenState extends State<MainScreen> {
                     child: const Icon(Icons.delete, color: Colors.white),
                   ),
                   onDismissed: (direction) {
+                    final removedTask = task;
+                    final removedIndex = index;
+
                     _deleteTask(task.id);
+
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Deleted "${removedTask.title}"'),
+                        action: SnackBarAction(
+                          label: 'Undo',
+                          onPressed: () {
+                            setState(() {
+                              tasks.insert(removedIndex, removedTask);
+                              _listKey.currentState?.insertItem(removedIndex);
+                            });
+                          },
+                        ),
+                        duration: const Duration(seconds: 3),
+                      ),
+                    );
                   },
                   child: _buildTaskTile(task, animation),
                 );
